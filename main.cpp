@@ -115,8 +115,8 @@ namespace learn1 {
         Label Exit = a->newLabel();
 
         a->xor_(result, result); //用异或操作清空
-        a->test(arg2_count, arg2_count); //按为与操作，只会修改零标志ZF，不修改arg2_count占用的寄存器
-        //a->cmp(arg2_count, 0);
+        //a->test(arg2_count, arg2_count); //按为与操作，只会修改零标志ZF，不修改arg2_count占用的寄存器
+        a->cmp(arg2_count, 0);
         a->jz(Exit); //==0,跳转到Exit
         a->bind(Loop); //绑定锚点
         a->add(result, x86::dword_ptr(arg1_arr)); //从arg1_arr取4个字节，并加到result上面
