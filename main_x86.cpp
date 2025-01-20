@@ -10,6 +10,7 @@
 #include <asmjit/x86.h>
 #include <stdio.h>
 using namespace asmjit;
+using namespace std;
 
 // Signature of the generated function.
 typedef int (*SumFunc)(const int *arr, size_t count);
@@ -133,11 +134,63 @@ namespace learn1 {
     }
 }
 
+namespace learn2 {
+    class Car {
+    public:
+        Car() { number = 10; }
+        int number;
+    };
+
+    void changeType(Car *aCar, int aNumbernewName) {
+        size_t offset = offsetof(Car, number);
+        char *ptr = reinterpret_cast<char *>(aCar);
+        *(reinterpret_cast<int *>(ptr + offset)) = 20;
+    }
+
+    void asmChangeName(Car *aCar, int newName) {
+        auto offset = offsetof(Car, number);
+        auto ptr = reinterpret_cast<uintptr_t>(aCar);
+        auto valuePtr = ptr + offset;
+
+        //int value = 0;
+        JitRuntime rt;
+        CodeHolder code;
+        code.init(rt.environment(), rt.cpuFeatures());
+        x86::Assembler a(&code);
+
+        // 将 newName 加载到 rcx 寄存器
+        a.mov(x86::rcx, newName);
+        // 将 rcx 的值存储到 value 的地址
+        a.mov(x86::ptr(uint64_t(valuePtr)), x86::rcx);
+        // 函数返回，不返回任何值
+        a.ret();
+
+        // 编译生成的函数
+        void (*func)() = nullptr;
+        Error err = rt.add(&func, &code);
+        if (err) {
+            std::cerr << "asmChangeName error: " << err << std::endl;
+            return;
+        }
+
+        // 执行汇编代码
+        func();
+        std::cout << "asmChangeName ok." << aCar->number << std::endl;
+    }
+
+    void test() {
+        auto aCar = new Car();
+        //changeType(aCar, 20);
+        asmChangeName(aCar, 120);
+        std::cout << "asmChangeName ok." << aCar->number << std::endl;
+        //size_t offset = offsetof(Car, name);
+    }
+}
 
 int main() {
-    auto fn = learn1::generateSum();
-    int array[6] = {4, 8, 15, 16, 23, 42};
-    int resultO = fn(array, 6);
-    std::cout << "learn1 result:" << resultO << std::endl;
+    // auto fn = learn1::generateSum();
+    learn1::generateSum();
+    learn2::test();
+
     return 1;
 }
