@@ -50,14 +50,11 @@ int main1() {
 
     //异或操作，自身进行亦或操作，总是为0，常用来清空
     a.xor_(sum, sum); // Clear 'sum' register (shorter than 'mov').
-
     // cnt & cnt，即测试 cnt 是否为 0。它不会修改 cnt，只更新标志寄存器的零标志 ZF。
     a.test(cnt, cnt); // Border case:
     // 根据零标志 ZF 来判断，如果 cnt 为 0，零标志就会被置为 1，跳转到 Exit。
     a.jz(Exit); //   If 'cnt' is zero jump to 'Exit' now.
-
     a.bind(Loop); // Start of a loop iteration.
-
     a.add(sum, x86::dword_ptr(arr)); // Add int at [arr] to 'sum'.
     a.add(arr, 4); // Increment 'arr' pointer.
     a.dec(cnt); // Decrease 'cnt'.
