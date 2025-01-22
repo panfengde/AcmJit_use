@@ -187,10 +187,156 @@ namespace learn2 {
     }
 }
 
+namespace learn3 {
+    enum someType {
+        one = 10,
+        two
+    };
+
+    class Base {
+    public:
+        int theType = 10;
+        char *baseName = "base";
+
+        virtual void speak() {
+            cout << "Base speak" << endl;
+        }
+    };
+
+    class DataCar : public Base {
+    public:
+        DataCar() {
+            name = new char[strlen("a car")]; // 动态分配内存
+            strcpy(name, "a car"); // 将字符串拷贝到动态分配的内存中
+            age = 123;
+        }
+
+        char *name;
+        int age;
+
+        void go() {
+            cout << "DataCar speak" << endl;
+        }
+
+        void speak() override {
+            cout << "DataCar speak" << endl;
+        }
+    };
+
+    class DataAirPlane : public Base {
+    public:
+        DataAirPlane() {
+            name = new char[strlen("airPlane")]; // 动态分配内存
+            strcpy(name, "airPlane"); // 将字符串拷贝到动态分配的内存中
+            age = 100;
+        }
+
+        char *name;
+        int age;
+    };
+
+    size_t getStringDataOffset(std::string &str) {
+        // 获取 std::string 对象本身的地址
+        char *strPtr = reinterpret_cast<char *>(&str);
+
+        // 获取 std::string 内部存储的字符数据的地址
+        const char *dataPtr = str.data();
+
+        // 计算对象和数据之间的偏移量
+        return static_cast<size_t>(dataPtr - strPtr);
+    }
+
+    void useByPtr() {
+        auto aCar = new DataCar();
+        auto aFly = new DataAirPlane();
+
+
+        auto typeOffset = offsetof(DataCar, theType);
+        auto ageOffset = offsetof(DataCar, age);
+        auto nameOffset = offsetof(DataCar, name);
+        cout << *reinterpret_cast<int *>(reinterpret_cast<char *>(aCar) + typeOffset) << endl;
+        cout << *reinterpret_cast<int *>(reinterpret_cast<char *>(aCar) + ageOffset) << endl;
+        cout << *reinterpret_cast<char **>(reinterpret_cast<char *>(aCar) + nameOffset) << endl;
+
+
+        ////// 调用虚函数
+        // 获取虚函数表的地址
+        void **vtable = *reinterpret_cast<void ***>(aCar);
+        // 获取第一个虚函数地址，这里假设 speak 是第一个虚函数
+        void (*speakFunc)() = reinterpret_cast<void(*)()>(vtable[0]);
+        speakFunc(); // 输出: DataCar speak
+
+
+        JitRuntime rt;
+        CodeHolder code;
+        code.init(rt.environment(), rt.cpuFeatures());
+        x86::Assembler a(&code);
+    }
+
+    void setObjOffest(x86::Assembler *a, uintptr_t ptr, uintptr_t offset) {
+        a->mov(x86::rax, uintptr_t(ptr));
+        a->mov(x86::rcx, offset);
+        a->add(x86::rax, x86::rcx);
+    }
+
+    //设置int指针的value
+    void setInt(x86::Assembler *a, uintptr_t ptr, int value) {
+        a->mov(x86::rcx, value);
+        a->mov(x86::ptr(ptr), x86::rcx);
+    }
+
+    void useByASM() {
+        auto aCar = new DataCar();
+        auto aFly = new DataAirPlane();
+
+
+        auto typeOffset = offsetof(DataCar, theType);
+        auto ageOffset = offsetof(DataCar, age);
+        auto nameOffset = offsetof(DataCar, name);
+        cout << *reinterpret_cast<int *>(reinterpret_cast<char *>(aCar) + typeOffset) << endl;
+        cout << *reinterpret_cast<int *>(reinterpret_cast<char *>(aCar) + ageOffset) << endl;
+        cout << *reinterpret_cast<char **>(reinterpret_cast<char *>(aCar) + nameOffset) << endl;
+
+        // 创建一个自定义的 Logger
+
+
+        JitRuntime rt;
+        CodeHolder code;
+        code.init(rt.environment(), rt.cpuFeatures());
+        x86::Assembler a(&code);
+
+        a.mov(x86::rax, uintptr_t(aCar));
+        a.mov(x86::rcx, ageOffset);
+        a.add(x86::rax, x86::rcx);
+        a.mov(x86::rcx, 20);
+        a.mov(x86::ptr(x86::rax), x86::rcx);
+        a.ret();
+
+        // 输出格式化字符串
+        //logger.logf("This is a formatted log: value = %d", 42);
+        // 编译生成的函数
+        void (*func)() = nullptr;
+        Error err = rt.add(&func, &code);
+        if (err) {
+            std::cerr << "asmChangeName error: " << err << std::endl;
+            return;
+        }
+
+        // 执行汇编代码
+        func();
+        std::cout << "aCar->age:" << aCar->age << std::endl;
+    }
+
+    void main() {
+        useByASM();
+    }
+}
+
 int main() {
     // auto fn = learn1::generateSum();
-    learn1::generateSum();
-    learn2::test();
+    // learn1::generateSum();
+    // learn2::test();
+    learn3::main();
 
     return 1;
 }

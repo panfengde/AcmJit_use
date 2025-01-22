@@ -103,3 +103,26 @@ int main() {
     JITTest();
     return 0;
 }
+
+class Car{
+  public:
+    Car(std::string aname){
+        name=aname;
+    };
+    void showName(){
+
+    }
+    std::string name;
+};
+
+int test(int type){
+      if(type==1){
+           auto aCar= new Car("hello");
+          aCar->showName();
+          return type;
+      }else{
+          auto aCar= new Car("hello");
+          aCar->showName();
+          return type;
+      }
+}
